@@ -17,7 +17,9 @@ const CryptoDetails = () => {
   const [timeperiod, setTimeperiod] = useState('24h');
   const [coinHistory, setCoinHistory] = useState("");
   const { coinId } = useParams();
-
+  
+  const description = `${cryptoDetails?.description}` !== "undefined" ? `${cryptoDetails?.description}` : "Error";
+  
   useEffect(() => {
     const fetchCoinDetails = async() => {
       setLoading(true);
@@ -117,7 +119,7 @@ const CryptoDetails = () => {
       <Col className="coin-desc-link">
         <Row className="coin-desc">
           <Title level={3} className="coin-details-heading">What is {cryptoDetails?.name}?</Title>
-          {HTMLReactParser(cryptoDetails?.description)}
+          {HTMLReactParser(description)}
         </Row>
         <Col className="coin-links">
           <Title level={3} className="coin-details-heading">{cryptoDetails?.name} Links</Title>
