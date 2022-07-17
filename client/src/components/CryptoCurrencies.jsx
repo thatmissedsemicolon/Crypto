@@ -1,26 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import millify from 'millify';
+import { millify } from '../utils/Millify';
+import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Card, Row, Col, Input } from 'antd';
-
-import { useGetCryptosQuery } from '../services/cryptoApi';
 import Loader from './Loader';
 
 const Cryptocurrencies = ({ simplified }) => {
   const count = simplified ? 10 : 100;
-  const { data: cryptosList, isFetching } = useGetCryptosQuery(count);
+  const [loading, setLoading] = useState(false);
   const [cryptos, setCryptos] = useState();
+  const [searchData, setSearchData] = useState();
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    setCryptos(cryptosList?.data?.coins);
+  const cryptoList = async() => {
+    try {
+      await axios.get(`http://localhost:8000/coins?limit=${count}`).then((res) => {
+        setCryptos(res.data?.data?.coins);
+        setLoading(false);
+      })
+    }
+    catch {
+      setLoading(true);
+    }
+  }
 
-    const filteredData = cryptosList?.data?.coins.filter((item) => item.name.toLowerCase().includes(searchTerm));
-
+  const search = () => {
+    axios.get(`http://localhost:8000/coins?limit=${count}`).then((res) => {
+      setSearchData(res.data?.data?.coins);
+    })
+    const filteredData = searchData?.filter((item) => item.name.toLowerCase().includes(searchTerm));
     setCryptos(filteredData);
-  }, [cryptosList, searchTerm]);
+    setLoading(false);
+  }
 
-  if (isFetching) return <Loader />;
+  useEffect(() => {
+    setLoading(true);
+    if(searchTerm) {
+      search();
+    } 
+    else {
+      cryptoList();
+    }
+  }, [searchTerm]);
+
+  if (loading) return <Loader />;
 
   return (
     <>  
@@ -44,7 +67,7 @@ const Cryptocurrencies = ({ simplified }) => {
             <Link key={currency.uuid} to={`/crypto/${currency.uuid}`}>
               <Card
                 title={`${currency.rank}. ${currency.name}`}
-                extra={<img className="crypto-image" src={currency.iconUrl} />}
+                extra={<img alt="Crypto" className="crypto-image" src={currency.iconUrl} />}
                 hoverable
               >
                 <p>Price: ${millify(currency.price)}</p>

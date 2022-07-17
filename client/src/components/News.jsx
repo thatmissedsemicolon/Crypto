@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Select, Typography, Row, Col, Avatar, Card } from 'antd';
+import axios from 'axios';
 import moment from 'moment';
-
-import { useGetCryptosQuery } from '../services/cryptoApi';
-import { useGetCryptoNewsQuery } from '../services/cryptoNewsApi';
 import Loader from './Loader';
 
 const demoImage = 'https://www.bing.com/th?id=OVFT.mpzuVZnv8dwIMRfQGPbOPC&pid=News';
@@ -12,11 +10,40 @@ const { Text, Title } = Typography;
 const { Option } = Select;
 
 const News = ({ simplified }) => {
+  const count = simplified ? 6 : 12;
+  const [crypto, setCrypto] = useState();
   const [newsCategory, setNewsCategory] = useState('Cryptocurrency');
-  const { data } = useGetCryptosQuery(100);
-  const { data: cryptoNews } = useGetCryptoNewsQuery({ newsCategory, count: simplified ? 6 : 12 });
+  const [cryptoNews, setCryptoNews] = useState();
+  const [loading, setLoading] = useState(false);
 
-  if (!cryptoNews?.value) return <Loader />;
+  useEffect(() => {
+    setLoading(true);
+    const fetchGlobalStats = async() => {
+      try {
+        await axios.get(`http://localhost:8000/coins?limit=100`).then((res) => {
+          setCrypto(res?.data);
+        });
+        setLoading(false);
+      }
+      catch {
+        setLoading(true);
+      }
+    }
+    
+    fetchGlobalStats();
+  },[])
+
+  useEffect(() => {
+    const fetchNews = async() => {
+      await axios.get(`http://localhost:8000/news?newsCategory=${newsCategory}&count=${count}`).then((res) => {
+        setCryptoNews(res?.data);
+      })
+    }
+
+    fetchNews();
+  },[newsCategory, count])
+
+  if (loading) return <Loader />;
 
   return (
     <Row gutter={[24, 24]}>
@@ -31,11 +58,11 @@ const News = ({ simplified }) => {
             filterOption={(input, option) => option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
           >
             <Option value="Cryptocurency">Cryptocurrency</Option>
-            {data?.data?.coins?.map((currency) => <Option value={currency.name}>{currency.name}</Option>)}
+            {crypto?.data?.coins?.map((currency) => <Option value={currency.name}>{currency.name}</Option>)}
           </Select>
         </Col>
       )}
-      {cryptoNews.value.map((news, i) => (
+      {cryptoNews?.value?.map((news, i) => (
         <Col xs={24} sm={12} lg={8} key={i}>
           <Card hoverable className="news-card">
             <a href={news.url} target="_blank" rel="noreferrer">
